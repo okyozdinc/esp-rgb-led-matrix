@@ -129,63 +129,81 @@ void InitState::entry(StateMachine& sm)
         LOG_FATAL("Couldn't mount the filesystem.");
         isError = true;
     }
-    /* Start LED matrix */
-    else if (false == LedMatrix::getInstance().begin())
-    {
-        LOG_FATAL("Failed to initialize LED matrix.");
-        isError = true;
-    }
-    /* Initialize display manager */
-    else if (false == DisplayMgr::getInstance().begin())
-    {
-        LOG_FATAL("Failed to initialize display manager.");
-        isError = true;
-    }
-    /* Initialize system message handler */
-    else if (false == SysMsg::getInstance().init())
-    {
-        LOG_FATAL("Failed to initialize system message handler.");
-        isError = true;
-    }
-    /* Initialize over-the-air update server */
-    else if (false == UpdateMgr::getInstance().init())
-    {
-        LOG_FATAL("Failed to initialize Arduino OTA.");
-        isError = true;
-    }
     else
     {
         Settings* settings = &Settings::getInstance();
 
         /* Load some general configuration parameters from persistent memory. */
-        if (true == settings->open(true))
+        if (false == settings->open(true))
         {
-            /* Enable or disable the automatic display brightness adjustment,
-             * depended on settings. Enable it may fail in case there is no
-             * LDR sensor available.
-             */
-            bool isEnabled = settings->getAutoBrightnessAdjustment().getValue();
-
-            if (false == DisplayMgr::getInstance().setAutoBrightnessAdjustment(isEnabled))
-            {
-                LOG_WARNING("Failed to enable autom. brigthness adjustment.");
-            }
-
-            /* Set text scroll pause for all text widgets. */
-            uint32_t scrollPause = settings->getScrollPause().getValue();
-            TextWidget::setScrollPause(scrollPause);
-
-            settings->close();
+            LOG_FATAL("Couldn't open settings.");
+            isError = true;
         }
+        else
+        {
+            bool        isAutoBrightnessAdjustmentEnabled   = settings->getAutoBrightnessAdjustment().getValue();
+            uint32_t    textScrollPause                     = settings->getScrollPause().getValue();
+            uint8_t     ledMatrixTopology                   = settings->getMatrixTopology().getValue();
 
-        /* Don't store the wifi configuration in the NVS.
-         * This seems to cause a reset after a client connected to the access point.
-         * https://github.com/espressif/arduino-esp32/issues/2025#issuecomment-503415364
-         */
-        WiFi.persistent(false);
+            /* All configuration parameters from persistent memory are loaded now. */
+            settings->close();
 
-        /* Show some informations on the display. */
-        showStartupInfoOnDisplay();
+            /* Configure LED matrix layout, before its started. This avoids concurrent
+             * access protection (performance) in the LedMatrix.
+             */
+            LedMatrix::getInstance().setLayout(static_cast<LedMatrix::Topology>(ledMatrixTopology));
+
+            /* Start LED matrix with default matrix layout.
+             * Note, the default configuration here is not the one from the settings,
+             * but from the LedMatrix internal default value.
+             */
+            if (false == LedMatrix::getInstance().begin())
+            {
+                LOG_FATAL("Failed to initialize LED matrix.");
+                isError = true;
+            }
+            /* Initialize display manager */
+            else if (false == DisplayMgr::getInstance().begin())
+            {
+                LOG_FATAL("Failed to initialize display manager.");
+                isError = true;
+            }
+            /* Initialize system message handler */
+            else if (false == SysMsg::getInstance().init())
+            {
+                LOG_FATAL("Failed to initialize system message handler.");
+                isError = true;
+            }
+            /* Initialize over-the-air update server */
+            else if (false == UpdateMgr::getInstance().init())
+            {
+                LOG_FATAL("Failed to initialize Arduino OTA.");
+                isError = true;
+            }
+            else
+            {
+                /* Enable or disable the automatic display brightness adjustment,
+                 * depended on settings. Enable it may fail in case there is no
+                 * LDR sensor available.
+                 */
+                if (false == DisplayMgr::getInstance().setAutoBrightnessAdjustment(isAutoBrightnessAdjustmentEnabled))
+                {
+                    LOG_WARNING("Failed to enable autom. brigthness adjustment.");
+                }
+
+                /* Set text scroll pause for all text widgets. */
+                TextWidget::setScrollPause(textScrollPause);
+
+                /* Don't store the wifi configuration in the NVS.
+                 * This seems to cause a reset after a client connected to the access point.
+                 * https://github.com/espressif/arduino-esp32/issues/2025#issuecomment-503415364
+                 */
+                WiFi.persistent(false);
+
+                /* Show some informations on the display. */
+                showStartupInfoOnDisplay();
+            }
+        }
     }
 
     /* Any error happened? */

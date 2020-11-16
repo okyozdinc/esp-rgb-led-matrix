@@ -59,6 +59,180 @@
  *****************************************************************************/
 
 /**
+ * LED matrix topology base class.
+ * Derived from the NeoTopology class and used for runtime configuration of the
+ * physical matrix layout.
+ */
+class LedMatrixTopology
+{
+public:
+
+    /**
+     * Constructs the matrix topology base object.
+     * 
+     * @param[in] width     Matrix width in pixels
+     * @param[in] height    Matrix height in pixels
+     */
+    LedMatrixTopology(uint16_t width, uint16_t height) :
+        m_width(width),
+        m_height(height)
+    {
+    }
+
+    /**
+     * Constructs the matrix topology by assignment.
+     */
+    LedMatrixTopology(const LedMatrixTopology& topo) :
+        m_width(topo.m_width),
+        m_height(topo.m_height)
+    {
+    }
+
+    /**
+     * Destroys the matrix topology base object.
+     */
+    virtual ~LedMatrixTopology()
+    {
+    }
+
+    /**
+     * Get matrix width.
+     * 
+     * @return Width in pixels
+     */
+    uint16_t getWidth() const 
+    {
+        return m_width;
+    }
+
+    /**
+     * Get matrix height.
+     * 
+     * @return Height in pixels
+     */
+    uint16_t getHeight() const 
+    {
+        return m_height;
+    }
+
+    /**
+     * Map the framebuffer coordinates to the matrix position, depended on
+     * its physical layout. If the given coordinates are outside the defined
+     * with/height, they will be limited accordingly.
+     *
+     * @param[in] x     x-coordinate
+     * @param[in] y     y-coordinate
+     * 
+     * @return Index position in the matrix
+     */
+    virtual uint16_t map(int16_t x, int16_t y) const = 0;
+
+    /**
+     * Map the framebuffer coordinates to the matrix position, depended on
+     * its physical layout. If the given coordinates are outside the defined
+     * with/height, the returned position counts width * height.
+     *
+     * @param[in] x     x-coordinate
+     * @param[in] y     y-coordinate
+     * 
+     * @return Index position in the matrix
+     */
+    virtual uint16_t mapProbe(int16_t x, int16_t y) const = 0;
+
+protected:
+
+    const uint16_t  m_width;    /**< Matrix width in pixels */
+    const uint16_t  m_height;   /**< Matrix height in pixels */
+
+    LedMatrixTopology();
+};
+
+/**
+ * LED matrix layout class.
+ * Derived from the NeoTopology class and used for runtime configuration of the
+ * physical matrix layout.
+ * 
+ * @tparam T_LAYOUT Matrix layout, see Layout.h from NeoPixelBus library.
+ */
+template <typename T_LAYOUT> class LedMatrixLayout : public LedMatrixTopology
+{
+public:
+
+    /**
+     * Constructs the matrix layout object.
+     * 
+     * @param[in] width     Matrix width in pixels
+     * @param[in] height    Matrix height in pixels
+     */
+    LedMatrixLayout(uint16_t width, uint16_t height) :
+        LedMatrixTopology(width, height)
+    {
+    }
+
+    /**
+     * Destroys the matrix layout object.
+     */
+    ~LedMatrixLayout()
+    {
+    }
+
+    /**
+     * Map the framebuffer coordinates to the matrix position, depended on
+     * its physical layout. If the given coordinates are outside the defined
+     * with/height, they will be limited accordingly.
+     *
+     * @param[in] x     x-coordinate
+     * @param[in] y     y-coordinate
+     * 
+     * @return Index position in the matrix
+     */
+    uint16_t map(int16_t x, int16_t y) const override
+    {   
+        if (x >= m_width)
+        {
+            x = m_width - 1;
+        }
+        else if (x < 0)
+        {
+            x = 0;
+        }
+        if (y >= m_height)
+        {
+            y = m_height - 1;
+        }
+        else if (y < 0)
+        {
+            y = 0;
+        }
+        return T_LAYOUT::Map(m_width, m_height, x, y);
+    }
+
+    /**
+     * Map the framebuffer coordinates to the matrix position, depended on
+     * its physical layout. If the given coordinates are outside the defined
+     * with/height, the returned position counts width * height.
+     *
+     * @param[in] x     x-coordinate
+     * @param[in] y     y-coordinate
+     * 
+     * @return Index position in the matrix
+     */
+    uint16_t mapProbe(int16_t x, int16_t y) const override
+    {
+        if (x < 0 || x >= m_width || y < 0 || y >= m_height)
+        {
+            return m_width  * m_height; // count, out of bounds
+        }
+        return T_LAYOUT::Map(m_width, m_height, x, y);
+    }
+
+private:
+
+    LedMatrixLayout();
+
+};
+
+/**
  * Specific LED matrix.
  */
 class LedMatrix : public IGfx
@@ -144,16 +318,67 @@ public:
      */
     Color getColor(int16_t x, int16_t y) const;
 
+    /** List of possible physical matrix layouts. */
+    enum Topology
+    {
+        TOPOLOGY_ROW_MAJOR = 0,                 /**< Row major layout */
+        TOPOLOGY_ROW_MAJOR_90,                  /**< Row major 90 degree turned layout */
+        TOPOLOGY_ROW_MAJOR_180,                 /**< Row major 180 degree turned layout */
+        TOPOLOGY_ROW_MAJOR_270,                 /**< Row major 270 degree turned layout */
+        TOPOLOGY_ROW_MAJOR_ALTERNATING,         /**< Row major alternating layout */
+        TOPOLOGY_ROW_MAJOR_ALTERNATING_90,      /**< Row major alternating 90 degree turned layout */
+        TOPOLOGY_ROW_MAJOR_ALTERNATING_180,     /**< Row major alternating 180 degree turned layout */
+        TOPOLOGY_ROW_MAJOR_ALTERNATING_270,     /**< Row major alternating 270 degree turned layout */
+        TOPOLOGY_COLUMN_MAJOR,                  /**< Column major layout */
+        TOPOLOGY_COLUMN_MAJOR_90,               /**< Column major 90 degree turned layout */
+        TOPOLOGY_COLUMN_MAJOR_180,              /**< Column major 180 degree turned layout */
+        TOPOLOGY_COLUMN_MAJOR_270,              /**< Column major 270 degree turned layout */
+        TOPOLOGY_COLUMN_MAJOR_ALTERNATING,      /**< Column major alternating layout */
+        TOPOLOGY_COLUMN_MAJOR_ALTERNATING_90,   /**< Column major alternating 90 degree turned layout */
+        TOPOLOGY_COLUMN_MAJOR_ALTERNATING_180,  /**< Column major alternating 180 degree turned layout */
+        TOPOLOGY_COLUMN_MAJOR_ALTERNATING_270,  /**< Column major alternating 270 degree turned layout */
+        TOPOLOGY_MAX                            /**< Max. number of topologies. */
+    };
+
+    /**
+     * Get current configured physical matrix layout.
+     * 
+     * @return Topology
+     */
+    Topology getLayout() const
+    {
+        return m_topology;
+    }
+
+    /**
+     * Configure physical matrix layout.
+     * 
+     * @param[in] topo  Topology
+     */
+    void setLayout(Topology topo)
+    {
+        if (TOPOLOGY_MAX > topo)
+        {
+            createLayout(topo);
+        }
+    }
+
 private:
 
     /** LedMatrix instance */
     static LedMatrix    m_instance;
 
+    /** Physical matrix layout */
+    Topology                                                m_topology;
+
     /** Pixel representation of the LED matrix */
     NeoPixelBrightnessBus<NeoGrbFeature, Neo800KbpsMethod>  m_strip;
 
-    /** Panel topology, used to map coordinates to the framebuffer. */
-    NeoTopology<ColumnMajorAlternatingLayout>               m_topo;
+    /**
+     * The matrix topology is used to transform from a 2d-matrix coordinate system
+     * to the LED string array position.
+     */
+    LedMatrixTopology*                                      m_topo;
 
     /**
      * Construct LED matrix.
@@ -180,11 +405,12 @@ private:
         if ((0 <= x) &&
             (Board::LedMatrix::width > x) &&
             (0 <= y) &&
-            (Board::LedMatrix::height > y))
+            (Board::LedMatrix::height > y) &&
+            (nullptr != m_topo))
         {
             HtmlColor htmlColor = static_cast<uint32_t>(color);
 
-            m_strip.SetPixelColor(m_topo.Map(x, y), htmlColor);
+            m_strip.SetPixelColor(m_topo->map(x, y), htmlColor);
         }
 
         return;
@@ -205,15 +431,23 @@ private:
         if ((0 <= x) &&
             (Board::LedMatrix::width > x) &&
             (0 <= y) &&
-            (Board::LedMatrix::height > y))
+            (Board::LedMatrix::height > y) &&
+            (nullptr != m_topo))
         {
-            RgbColor rgbColor = m_strip.GetPixelColor(m_topo.Map(x, y)).Dim(UINT8_MAX - ratio);
+            RgbColor rgbColor = m_strip.GetPixelColor(m_topo->map(x, y)).Dim(UINT8_MAX - ratio);
 
-            m_strip.SetPixelColor(m_topo.Map(x, y), rgbColor);
+            m_strip.SetPixelColor(m_topo->map(x, y), rgbColor);
         }
 
         return;
     }
+
+    /**
+     * Create physical matrix layout.
+     * 
+     * @param[in] topo  Topology
+     */
+    void createLayout(Topology topo);
 };
 
 /******************************************************************************

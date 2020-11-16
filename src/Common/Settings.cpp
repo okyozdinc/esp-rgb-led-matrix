@@ -113,6 +113,9 @@ static const char* KEY_SLOT_CONFIG                  = "slot_cfg";
 /** Scroll pause key */
 static const char* KEY_SCROLL_PAUSE                 = "scroll_pause";
 
+/** Matrix topology key */
+static const char* KEY_MATRIX_TOPOLOGY              = "matrix_topology";
+
 /* ---------- Key value pair names ---------- */
 
 /** Wifi network name of key value pair */
@@ -159,6 +162,9 @@ static const char*  NAME_SLOT_CONFIG                = "Display slot configuratio
 
 /** Scroll pause name */
 static const char*  NAME_SCROLL_PAUSE               = "Text scroll pause [ms]";
+
+/** Matrix topology name */
+static const char*  NAME_MATRIX_TOPOLOGY            = "LED matrix topology";
 
 /* ---------- Default values ---------- */
 
@@ -207,6 +213,9 @@ static const char*      DEFAULT_SLOT_CONFIG             = "";
 /** Scroll pause default value in ms */
 static uint32_t         DEFAULT_SCROLL_PAUSE            = 80U;
 
+/** Matrix topology default value */
+static uint8_t          DEFAULT_MATRIX_TOPOLOGY         = 12;   /* TOPOLOGY_COLUMN_MAJOR_ALTERNATING */
+
 /* ---------- Minimum values ---------- */
 
 /** Wifi network SSID min. length. Section 7.3.2.1 of the 802.11-2007 specification. */
@@ -250,6 +259,9 @@ static const size_t     MIN_VALUE_SLOT_CONFIG           = 0U;
 /** Scroll pause minimum value in ms */
 static uint32_t         MIN_VALUE_SCROLL_PAUSE          = 20U;
 
+/** Matrix topology minimum value. See LedMatrix::Topology */
+static uint8_t          MIN_VALUE_MATRIX_TOPOLOGY       = 0U;
+
 /* ---------- Maximum values ---------- */
 
 /** Wifi network SSID max. length. Section 7.3.2.1 of the 802.11-2007 specification. */
@@ -292,6 +304,9 @@ static const size_t     MAX_VALUE_SLOT_CONFIG           = 256U;
 
 /** Scroll pause maximum value in ms */
 static uint32_t         MAX_VALUE_SCROLL_PAUSE          = 500U;
+
+/** Matrix topology maximum value. See LedMatrix::Topology */
+static uint8_t          MAX_VALUE_MATRIX_TOPOLOGY       = 15U;
 
 /******************************************************************************
  * Public Methods
@@ -353,7 +368,8 @@ Settings::Settings() :
     m_dateFormatCtrl        (m_preferences, KEY_DATE_FORMAT,            NAME_DATE_FORMAT_CTRL,      DEFAULT_DATE_FORMAT_CTRL),
     m_maxSlots              (m_preferences, KEY_MAX_SLOTS,              NAME_MAX_SLOTS,             DEFAULT_MAX_SLOTS,              MIN_MAX_SLOTS,                  MAX_MAX_SLOTS),
     m_slotConfig            (m_preferences, KEY_SLOT_CONFIG,            NAME_SLOT_CONFIG,           DEFAULT_SLOT_CONFIG,            MIN_VALUE_SLOT_CONFIG,          MAX_VALUE_SLOT_CONFIG),
-    m_scrollPause           (m_preferences, KEY_SCROLL_PAUSE,           NAME_SCROLL_PAUSE,          DEFAULT_SCROLL_PAUSE,           MIN_VALUE_SCROLL_PAUSE,         MAX_VALUE_SCROLL_PAUSE)
+    m_scrollPause           (m_preferences, KEY_SCROLL_PAUSE,           NAME_SCROLL_PAUSE,          DEFAULT_SCROLL_PAUSE,           MIN_VALUE_SCROLL_PAUSE,         MAX_VALUE_SCROLL_PAUSE),
+    m_matrixTopology        (m_preferences, KEY_MATRIX_TOPOLOGY,        NAME_MATRIX_TOPOLOGY,       DEFAULT_MATRIX_TOPOLOGY,        MIN_VALUE_MATRIX_TOPOLOGY,      MAX_VALUE_MATRIX_TOPOLOGY)
 {
     m_keyValueList[0] = &m_wifiSSID;
     m_keyValueList[1] = &m_wifiPassphrase;
@@ -370,6 +386,7 @@ Settings::Settings() :
     m_keyValueList[12] = &m_maxSlots;
     m_keyValueList[13] = &m_slotConfig;
     m_keyValueList[14] = &m_scrollPause;
+    m_keyValueList[15] = &m_matrixTopology;
 }
 
 Settings::~Settings()

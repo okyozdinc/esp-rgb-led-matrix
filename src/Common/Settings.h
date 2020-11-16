@@ -245,6 +245,16 @@ public:
     }
 
     /**
+     * Get matrix topology.
+     *
+     * @return Key value pair
+     */
+    KeyValueUInt8& getMatrixTopology()
+    {
+        return m_matrixTopology;
+    }
+
+    /**
      * Get a list of all key value pairs.
      *
      * @return List of key value pairs.
@@ -266,7 +276,7 @@ public:
     }
 
     /** Number of key value pairs. */
-    static const uint8_t KEY_VALUE_PAIR_NUM = 15U;
+    static const uint8_t KEY_VALUE_PAIR_NUM = 16U;
 
 private:
 
@@ -290,6 +300,7 @@ private:
     KeyValueUInt8   m_maxSlots;             /**< Max. number of display slots. */
     KeyValueJson    m_slotConfig;           /**< Display slot configuration */
     KeyValueUInt32  m_scrollPause;          /**< Text scroll pause */
+    KeyValueUInt8   m_matrixTopology;       /**< LED matrix physical layout */
 
     /**
      * Constructs the settings instance.
